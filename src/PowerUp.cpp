@@ -3,21 +3,22 @@
 
 PowerUp::PowerUp()
     : position{0, 0}, type(PickupType::HEAVY), active(false),
-      size(Constants::POWERUP_SIZE)
+      size(Constants::POWERUP_SIZE), fallDir(1.0f)
 {
 }
 
-void PowerUp::Spawn(Vector2 pos, PickupType t)
+void PowerUp::Spawn(Vector2 pos, PickupType t, float dir)
 {
     position = pos;
     type     = t;
     active   = true;
+    fallDir  = dir;
 }
 
 void PowerUp::Update(float dt)
 {
     if (!active) return;
-    position.y += Constants::POWERUP_FALL_SPEED * dt;
+    position.y += Constants::POWERUP_FALL_SPEED * fallDir * dt;
     if (position.y > Constants::SCREEN_HEIGHT + 20)
         active = false;
 }

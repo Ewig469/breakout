@@ -8,7 +8,7 @@ class PowerUp {
 public:
     PowerUp();
 
-    void Spawn(Vector2 pos, PickupType t);
+    void Spawn(Vector2 pos, PickupType t, float dir = 1.0f);
     void Update(float dt);
     void Draw() const;
     void Deactivate();
@@ -19,4 +19,5 @@ public:
 
 private:
     float size;
+    float fallDir;
 };

@@ -178,10 +178,10 @@ void Game::HandleVictory()
 void Game::HandlePlayingCoop(float dt)
 {
     if (p1.alive) p1.paddle.Update(dt, input.P1MoveDir());
-    if (p2.alive) p2.paddle.Update(dt, input.P2MoveDir());
+    if (gameMode == GameMode::COOP && p2.alive) p2.paddle.Update(dt, input.P2MoveDir());
 
     if (p1.alive) HandleBall(p1, false);
-    if (p2.alive) HandleBall(p2, true);
+    if (gameMode == GameMode::COOP && p2.alive) HandleBall(p2, true);
 
     if (state != PLAYING) return;
     if (!p1.alive && !p2.alive) { state = GAME_OVER; return; }
@@ -190,11 +190,12 @@ void Game::HandlePlayingCoop(float dt)
     enemy.Update(dt);
     if (enemy.ConsumeShoot()) {
         float targetX = Constants::SCREEN_WIDTH / 2.0f;
-        int cnt = (p1.alive ? 1 : 0) + (p2.alive ? 1 : 0);
+        bool p2active = (gameMode == GameMode::COOP && p2.alive);
+        int cnt = (p1.alive ? 1 : 0) + (p2active ? 1 : 0);
         if (cnt > 0) {
             float sumX = 0;
             if (p1.alive) sumX += p1.paddle.rect.x + p1.paddle.rect.width / 2.0f;
-            if (p2.alive) sumX += p2.paddle.rect.x + p2.paddle.rect.width / 2.0f;
+            if (p2active) sumX += p2.paddle.rect.x + p2.paddle.rect.width / 2.0f;
             targetX = sumX / cnt;
         }
         float dx = targetX - (enemy.rect.x + enemy.rect.width / 2.0f);
@@ -221,7 +222,8 @@ void Game::HandlePlayingCoop(float dt)
         if (!p.active) continue;
         if (p1.alive && CheckCollisionCircleRec(p.position, p.size, p1.paddle.rect))
             { ApplyPlayerDamage(p1, p.damage); p.Deactivate(); continue; }
-        if (p2.alive && CheckCollisionCircleRec(p.position, p.size, p2.paddle.rect))
+        if (gameMode == GameMode::COOP && p2.alive &&
+            CheckCollisionCircleRec(p.position, p.size, p2.paddle.rect))
             { ApplyPlayerDamage(p2, p.damage); p.Deactivate(); }
     }
     if (!p1.alive && !p2.alive) { state = GAME_OVER; return; }
@@ -249,13 +251,13 @@ void Game::HandlePlayingCoop(float dt)
         if (!pu.active) continue;
         Rectangle r = {pu.position.x-8, pu.position.y-8, 16, 16};
         if (p1.alive && CheckCollisionRecs(r, p1.paddle.rect)) { CollectPowerUp(p1,pu); continue; }
-        if (p2.alive && CheckCollisionRecs(r, p2.paddle.rect)) { CollectPowerUp(p2,pu); }
+        if (gameMode == GameMode::COOP && p2.alive && CheckCollisionRecs(r, p2.paddle.rect)) { CollectPowerUp(p2,pu); }
     }
 
     if (p1.alive && input.P1Fire() && !p1.inventory.empty())
         { ProjType t = p1.inventory.front(); p1.inventory.erase(p1.inventory.begin());
           FirePlayerProjectile(t, {p1.paddle.rect.x + p1.paddle.rect.width/2, p1.paddle.rect.y}, 1); }
-    if (p2.alive && input.P2Fire() && !p2.inventory.empty())
+    if (gameMode == GameMode::COOP && p2.alive && input.P2Fire() && !p2.inventory.empty())
         { ProjType t = p2.inventory.front(); p2.inventory.erase(p2.inventory.begin());
           FirePlayerProjectile(t, {p2.paddle.rect.x + p2.paddle.rect.width/2, p2.paddle.rect.y}, 2); }
 
@@ -264,7 +266,7 @@ void Game::HandlePlayingCoop(float dt)
     brickGrid.Draw();
     enemy.Draw();
     if (p1.alive) DrawPlayer(p1, BLUE);
-    if (p2.alive) DrawPlayer(p2, SKYBLUE);
+    if (gameMode == GameMode::COOP && p2.alive) DrawPlayer(p2, SKYBLUE);
     for (auto& p : enemyProjectiles) p.Draw();
     for (auto& p : p1Projectiles) p.Draw();
     for (auto& pu : powerUps) pu.Draw();
@@ -330,13 +332,13 @@ void Game::HandlePlayingVersus(float dt)
         if (!p.active || p.type != ProjType::SCATTER_FRAG) continue;
         int pts = brickGrid.CheckCircleCollision(p.position, p.size);
         if (pts > 0) { p1.score += pts; p.Deactivate();
-            for (auto& pos : brickGrid.DrainDropPositions()) SpawnPowerUp(pos); }
+            for (auto& pos : brickGrid.DrainDropPositions()) SpawnPowerUp(pos, 1.0f); }
     }
     for (auto& p : p2Projectiles) {
         if (!p.active || p.type != ProjType::SCATTER_FRAG) continue;
         int pts = brickGrid.CheckCircleCollision(p.position, p.size);
         if (pts > 0) { p2.score += pts; p.Deactivate();
-            for (auto& pos : brickGrid.DrainDropPositions()) SpawnPowerUp(pos); }
+            for (auto& pos : brickGrid.DrainDropPositions()) SpawnPowerUp(pos, -1.0f); }
     }
 
     // Power-ups
@@ -399,6 +401,8 @@ void Game::HandleBall(PlayerState& pl, bool isP2)
 
 void Game::HandleBallVersus(PlayerState& pl, bool isP2)
 {
+    float dropDir = isP2 ? -1.0f : 1.0f;
+
     if (!pl.ball.IsLaunched()) {
         pl.ball.position.x = pl.paddle.rect.x + pl.paddle.rect.width / 2;
         if (isP2)
@@ -430,7 +434,7 @@ void Game::HandleBallVersus(PlayerState& pl, bool isP2)
     if (brickGrid.ConsumeSpeedBoost()) pl.ball.ApplySpeedBoost();
 
     auto drops = brickGrid.DrainDropPositions();
-    for (auto& pos : drops) SpawnPowerUp(pos);
+    for (auto& pos : drops) SpawnPowerUp(pos, dropDir);
 
     // Death zone: each ball only dies at its OWN bottom
     if (!isP2 && pl.ball.position.y > Constants::SCREEN_HEIGHT) {
@@ -512,7 +516,7 @@ void Game::CheckBallEnemyCollision(Ball& b)
 
 // ===== POWER-UP / FIRE =====
 
-void Game::SpawnPowerUp(Vector2 pos)
+void Game::SpawnPowerUp(Vector2 pos, float dir)
 {
     PowerUp pu;
     int r = std::rand() % 100;
@@ -521,7 +525,7 @@ void Game::SpawnPowerUp(Vector2 pos)
     else if (r < 55)  t = PickupType::HOMING;
     else if (r < 80)  t = PickupType::SCATTER;
     else              t = PickupType::HEAL;
-    pu.Spawn(pos, t);
+    pu.Spawn(pos, t, dir);
     powerUps.push_back(pu);
 }
 

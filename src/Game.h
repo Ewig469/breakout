@@ -43,7 +43,7 @@ private:
     void HandleBallVersus(PlayerState& pl, bool isP2);
     bool CheckPaddleCollision(Ball& b, const Paddle& pad);
     void CheckBallEnemyCollision(Ball& b);
-    void SpawnPowerUp(Vector2 pos);
+    void SpawnPowerUp(Vector2 pos, float dir = 1.0f);
     void CollectPowerUp(PlayerState& pl, PowerUp& pu);
     void FirePlayerProjectile(ProjType type, Vector2 origin, int ownerId);
     void HandleScatter(Vector2 pos, int ownerId);
