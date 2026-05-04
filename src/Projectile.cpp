@@ -4,16 +4,17 @@
 
 Projectile::Projectile()
     : position{0, 0}, velocity{0, 0}, size(Constants::PROJECTILE_SIZE),
-      type(ProjType::ENEMY), damage(0), active(false)
+      type(ProjType::ENEMY), damage(0), active(false), ownerId(0)
 {
 }
 
-void Projectile::Fire(Vector2 pos, Vector2 vel, ProjType t)
+void Projectile::Fire(Vector2 pos, Vector2 vel, ProjType t, int owner)
 {
     position = pos;
     velocity = vel;
     type     = t;
     active   = true;
+    ownerId  = owner;
     size     = Constants::PROJECTILE_SIZE;
 
     switch (t) {

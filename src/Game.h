@@ -9,12 +9,15 @@
 #include "Projectile.h"
 #include "PowerUp.h"
 
+enum class GameMode { SINGLE, COOP, VERSUS };
+
 struct PlayerState {
     Paddle paddle;
     Ball   ball;
     std::vector<ProjType> inventory;
     int hp;
     int maxHp;
+    int score;
     bool alive;
 };
 
@@ -30,17 +33,20 @@ private:
     void HandleModeSelect();
     void HandleMenu();
     void HandlePlaying(float dt);
+    void HandlePlayingCoop(float dt);
+    void HandlePlayingVersus(float dt);
     void HandleGameOver();
     void HandleVictory();
 
     void ApplyPlayerDamage(PlayerState& pl, int damage);
     void HandleBall(PlayerState& pl, bool isP2);
-    void CheckPaddleCollision(Ball& b, const Paddle& pad);
+    void HandleBallVersus(PlayerState& pl, bool isP2);
+    bool CheckPaddleCollision(Ball& b, const Paddle& pad);
     void CheckBallEnemyCollision(Ball& b);
     void SpawnPowerUp(Vector2 pos);
     void CollectPowerUp(PlayerState& pl, PowerUp& pu);
-    void FirePlayerProjectile(ProjType type, Vector2 origin);
-    void HandleScatter(Vector2 pos);
+    void FirePlayerProjectile(ProjType type, Vector2 origin, int ownerId);
+    void HandleScatter(Vector2 pos, int ownerId);
     void CleanupInactive();
     void ResetGame();
     void DrawPlayer(const PlayerState& pl, Color padColor) const;
@@ -55,16 +61,16 @@ private:
     PlayerState p2;
 
     std::vector<Projectile> enemyProjectiles;
-    std::vector<Projectile> playerProjectiles;
+    std::vector<Projectile> p1Projectiles;
+    std::vector<Projectile> p2Projectiles;
     std::vector<PowerUp>    powerUps;
 
     Texture2D texMenu;
     Texture2D texGameOver;
     Texture2D texVictory;
 
-    State state;
-    int   score;
-    int   bossSkillAccumulator;
-    int   modeSelection;
-    bool  twoPlayer;
+    GameMode gameMode;
+    State    state;
+    int      bossSkillAccumulator;
+    int      modeSelection;
 };

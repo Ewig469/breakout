@@ -1,6 +1,7 @@
 #include "BrickGrid.h"
 #include "Constants.h"
 #include <cstdlib>
+#include <cmath>
 #include <vector>
 #include <utility>
 
@@ -9,21 +10,30 @@ BrickGrid::BrickGrid()
     Generate(Constants::BRICK_ROWS, Constants::BRICK_COLS);
 }
 
-void BrickGrid::Generate(int r, int c)
+void BrickGrid::Generate(int r, int c, float yOffset, bool symmetric)
 {
+    if (yOffset < 0) yOffset = Constants::BRICK_OFFSET_TOP;
+    currentYOffset = yOffset;
     rows = r;
     cols = c;
     grid.clear();
     grid.resize(rows);
 
+    float centerRow = (rows - 1) / 2.0f;
     for (int i = 0; i < rows; ++i) {
         grid[i].reserve(cols);
         for (int j = 0; j < cols; ++j) {
             float x = Constants::BRICK_OFFSET_LEFT + j * (Constants::BRICK_WIDTH + Constants::BRICK_PADDING);
-            float y = Constants::BRICK_OFFSET_TOP  + i * (Constants::BRICK_HEIGHT + Constants::BRICK_PADDING);
-            int   hp = (rows - i + 2) / 3 + 1;
+            float y = yOffset + i * (Constants::BRICK_HEIGHT + Constants::BRICK_PADDING);
+            int hp;
+            if (symmetric)
+                hp = 3 - (int)std::abs(i - centerRow);
+            else
+                hp = (rows - i + 2) / 3 + 1;
             if (hp > 3) hp = 3;
-            grid[i].emplace_back(x, y, Constants::BRICK_WIDTH, Constants::BRICK_HEIGHT, hp);
+            if (hp < 1) hp = 1;
+            bool sb = ((float)rand() / RAND_MAX) < Constants::SPEED_BOOST_BRICK_CHANCE;
+            grid[i].emplace_back(x, y, Constants::BRICK_WIDTH, Constants::BRICK_HEIGHT, hp, sb);
         }
     }
 }
@@ -62,8 +72,11 @@ int BrickGrid::CheckCollision(Ball& ball)
                 else
                     ball.velocity.y = -ball.velocity.y;
 
-                if (brick.destroyed)
+                if (brick.destroyed) {
                     MaybeAddDrop(brick);
+                    if (brick.isSpeedBoost)
+                        speedBoostTriggered = true;
+                }
 
                 return points;
             }
@@ -80,8 +93,11 @@ int BrickGrid::CheckCircleCollision(Vector2 center, float radius)
 
             if (CheckCollisionCircleRec(center, radius, brick.rect)) {
                 int points = brick.Hit();
-                if (brick.destroyed)
+                if (brick.destroyed) {
                     MaybeAddDrop(brick);
+                    if (brick.isSpeedBoost)
+                        speedBoostTriggered = true;
+                }
                 return points;
             }
         }
@@ -100,7 +116,6 @@ bool BrickGrid::AllCleared() const
 
 void BrickGrid::ReviveRandomBricks(int count)
 {
-    // Collect indices of all destroyed bricks
     std::vector<std::pair<int,int>> destroyed;
     for (int i = 0; i < rows; ++i)
         for (int j = 0; j < cols; ++j)
@@ -114,8 +129,8 @@ void BrickGrid::ReviveRandomBricks(int count)
         destroyed.erase(destroyed.begin() + idx);
 
         float x = Constants::BRICK_OFFSET_LEFT + j * (Constants::BRICK_WIDTH + Constants::BRICK_PADDING);
-        float y = Constants::BRICK_OFFSET_TOP  + i * (Constants::BRICK_HEIGHT + Constants::BRICK_PADDING);
-        int hp = 1 + rand() % 2;  // 1 or 2 HP
+        float y = currentYOffset + i * (Constants::BRICK_HEIGHT + Constants::BRICK_PADDING);
+        int hp = 1 + rand() % 2;
 
         grid[i][j] = Brick(x, y, Constants::BRICK_WIDTH, Constants::BRICK_HEIGHT, hp);
         revived++;
@@ -125,6 +140,7 @@ void BrickGrid::ReviveRandomBricks(int count)
 void BrickGrid::Reset()
 {
     dropPositions.clear();
+    speedBoostTriggered = false;
     Generate(Constants::BRICK_ROWS, Constants::BRICK_COLS);
 }
 
@@ -133,6 +149,13 @@ std::vector<Vector2> BrickGrid::DrainDropPositions()
     std::vector<Vector2> result;
     result.swap(dropPositions);
     return result;
+}
+
+bool BrickGrid::ConsumeSpeedBoost()
+{
+    bool r = speedBoostTriggered;
+    speedBoostTriggered = false;
+    return r;
 }
 
 void BrickGrid::MaybeAddDrop(const Brick& brick)

@@ -1,7 +1,8 @@
 #include "Brick.h"
 
-Brick::Brick(float x, float y, float width, float height, int hp)
-    : rect{x, y, width, height}, hp(hp), destroyed(false), initialHp(hp)
+Brick::Brick(float x, float y, float width, float height, int hp, bool speedBoost)
+    : rect{x, y, width, height}, hp(hp), destroyed(false), isSpeedBoost(speedBoost),
+      initialHp(hp)
 {
 }
 
@@ -20,11 +21,17 @@ void Brick::Draw() const
     if (destroyed) return;
 
     Color color;
-    switch (hp) {
+    if (isSpeedBoost)
+        color = {0, 255, 255, 255};  // CYAN
+    else switch (hp) {
     case 3: color = RED;    break;
     case 2: color = ORANGE; break;
     default: color = YELLOW; break;
     }
     DrawRectangleRec(rect, color);
     DrawRectangleLinesEx(rect, 1, DARKGRAY);
+
+    if (isSpeedBoost) {
+        DrawText(">>", rect.x + rect.width/2 - 10, rect.y + 5, 10, BLACK);
+    }
 }

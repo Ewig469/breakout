@@ -10,10 +10,13 @@ constexpr float PADDLE_HEIGHT = 20.0f;
 constexpr float PADDLE_SPEED = 500.0f;
 constexpr float PADDLE1_Y = SCREEN_HEIGHT - 50.0f;
 constexpr float PADDLE2_Y = SCREEN_HEIGHT - 85.0f;
+constexpr float PADDLE_VERSUS_Y = 20.0f;
 
 constexpr float BALL_RADIUS = 8.0f;
 constexpr float BALL_SPEED = 400.0f;
-constexpr float BALL_MAX_BOUNCE_ANGLE = 1.0472f;  // 60 deg, prevent flat rebounds
+constexpr float BALL_MAX_BOUNCE_ANGLE = 1.0472f;
+constexpr float BALL_SPEED_BOOST_MULTIPLIER = 1.8f;
+constexpr float BALL_SPEED_BOOST_DURATION = 3.0f;
 
 constexpr int BRICK_ROWS = 6;
 constexpr int BRICK_COLS = 10;
@@ -22,8 +25,10 @@ constexpr float BRICK_HEIGHT = 25.0f;
 constexpr float BRICK_PADDING = 4.0f;
 constexpr float BRICK_OFFSET_TOP = 80.0f;
 constexpr float BRICK_OFFSET_LEFT = 45.0f;
+constexpr float SPEED_BOOST_BRICK_CHANCE = 0.08f;
 
 constexpr int PLAYER_HP = 100;
+constexpr int VERSUS_HP = 200;
 constexpr int ENEMY_HP = 300;
 constexpr int HEAL_AMOUNT = 20;
 
