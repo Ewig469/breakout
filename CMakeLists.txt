@@ -18,3 +18,10 @@ FetchContent_MakeAvailable(raylib)
 file(GLOB BREAKOUT_SOURCES src/*.cpp)
 add_executable(breakout ${BREAKOUT_SOURCES})
 target_link_libraries(breakout raylib)
+
+# Copy picture assets to build directory after build
+add_custom_command(TARGET breakout POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/picture"
+    "$<TARGET_FILE_DIR:breakout>/picture"
+)
