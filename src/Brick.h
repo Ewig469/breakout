@@ -8,6 +8,9 @@ public:
     int Hit();
     void Draw() const;
 
+    static void LoadTextures();
+    static void UnloadTextures();
+
     Rectangle rect;
     int hp;
     bool destroyed;

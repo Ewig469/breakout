@@ -20,6 +20,7 @@ Game::~Game()
     UnloadTexture(texMenu);
     UnloadTexture(texGameOver);
     UnloadTexture(texVictory);
+    Brick::UnloadTextures();
 }
 
 void Game::Run()
@@ -30,6 +31,8 @@ void Game::Run()
     texMenu     = LoadTexture(TextFormat("%spicture/menu.png", appDir));
     texGameOver = LoadTexture(TextFormat("%spicture/gameover.png", appDir));
     texVictory  = LoadTexture(TextFormat("%spicture/victory.png", appDir));
+
+    Brick::LoadTextures();
 
     while (!renderer.ShouldClose()) {
         float dt = GetFrameTime();
@@ -184,7 +187,8 @@ void Game::HandlePlayingCoop(float dt)
     if (gameMode == GameMode::COOP && p2.alive) HandleBall(p2, true);
 
     if (state != PLAYING) return;
-    if (!p1.alive && !p2.alive) { state = GAME_OVER; return; }
+    { bool allDead = (gameMode == GameMode::SINGLE) ? !p1.alive : (!p1.alive && !p2.alive);
+      if (allDead) { state = GAME_OVER; return; } }
     if (brickGrid.AllCleared() && enemy.isDead) { state = VICTORY; return; }
 
     enemy.Update(dt);
@@ -226,7 +230,8 @@ void Game::HandlePlayingCoop(float dt)
             CheckCollisionCircleRec(p.position, p.size, p2.paddle.rect))
             { ApplyPlayerDamage(p2, p.damage); p.Deactivate(); }
     }
-    if (!p1.alive && !p2.alive) { state = GAME_OVER; return; }
+    { bool allDead = (gameMode == GameMode::SINGLE) ? !p1.alive : (!p1.alive && !p2.alive);
+      if (allDead) { state = GAME_OVER; return; } }
 
     if (!enemy.isDead) {
         for (auto& p : p1Projectiles) {
@@ -382,8 +387,10 @@ void Game::HandleBall(PlayerState& pl, bool isP2)
 
     pl.ball.Update(GetFrameTime());
     CheckPaddleCollision(pl.ball, pl.paddle);
-    { PlayerState& other = isP2 ? p1 : p2;
-      if (other.alive) CheckPaddleCollision(pl.ball, other.paddle); }
+    if (gameMode == GameMode::COOP) {
+        PlayerState& other = isP2 ? p1 : p2;
+        if (other.alive) CheckPaddleCollision(pl.ball, other.paddle);
+    }
     CheckBallEnemyCollision(pl.ball);
 
     int pts = brickGrid.CheckCollision(pl.ball);
@@ -624,13 +631,14 @@ void Game::ResetGame()
     p1 = {Paddle(Constants::PADDLE1_Y), Ball(), {}, php, php, 0, true};
     p2 = {Paddle(p2y),                  Ball(), {}, php, php, 0, true};
 
-    // Ball colors
-    p1.ball.ballColor = RED;
-    p2.ball.ballColor = BLUE;
-
-    // P2 invertWalls in versus mode
+    // Ball colors (versus only)
     if (gameMode == GameMode::VERSUS) {
+        p1.ball.ballColor = RED;
+        p2.ball.ballColor = BLUE;
         p2.ball.invertWalls = true;
+    } else {
+        p1.ball.ballColor = WHITE;
+        p2.ball.ballColor = WHITE;
     }
 
     enemyProjectiles.clear();

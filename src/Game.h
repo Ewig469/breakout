@@ -32,7 +32,6 @@ private:
 
     void HandleModeSelect();
     void HandleMenu();
-    void HandlePlaying(float dt);
     void HandlePlayingCoop(float dt);
     void HandlePlayingVersus(float dt);
     void HandleGameOver();
